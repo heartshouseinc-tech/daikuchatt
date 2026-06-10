@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>大工AI計算チャット</title>
+<style>
+:root{--bg:#faf5e8;--bg2:#f0e8d0;--bg3:#e8dcc0;--border:#d4c090;--accent:#c17f24;--text:#2a1a08;--text2:#5a3a10;--text3:#8a6030;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:var(--bg);color:var(--text);height:100dvh;overflow:hidden;display:flex;flex-direction:column;}
+.app-header{background:linear-gradient(135deg,#2a1a08,#5a3010);color:#f5e8c8;padding:0 14px;height:52px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.app-header h1{font-size:15px;font-weight:700;flex:1;}
+.hbtn{background:rgba(255,255,255,.15);border:none;color:#f5e8c8;font-size:11px;padding:5px 10px;border-radius:10px;cursor:pointer;}
+.mode-bar{background:var(--bg2);border-bottom:2px solid var(--border);display:flex;flex-shrink:0;}
+.mbtn{flex:1;padding:9px 4px;border:none;background:none;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;border-bottom:3px solid transparent;}
+.mbtn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.chat-area{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:10px;}
+.msg{display:flex;gap:8px;animation:mi .2s ease;}
+@keyframes mi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.msg.user{flex-direction:row-reverse;}
+.av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;background:#e8f0f8;border:1px solid var(--border);}
+.msg.user .av{background:rgba(26,58,112,.15);}
+.bub{max-width:88%;padding:10px 13px;border-radius:14px;font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word;}
+.msg.bot .bub{background:#fff;border:1px solid var(--border);border-radius:4px 14px 14px 14px;box-shadow:0 1px 4px rgba(0,0,0,.07);}
+.msg.user .bub{background:linear-gradient(135deg,#1a3a70,#2a5ab0);color:#fff;border-radius:14px 4px 14px 14px;}
+.rcard{background:#fff;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;max-width:88%;}
+.rcard-hd{background:linear-gradient(135deg,#2a1a08,#5a3010);color:#f5e8c8;padding:8px 12px;font-size:12px;font-weight:700;}
+.rrow{display:flex;justify-content:space-between;align-items:baseline;padding:6px 12px;border-bottom:1px dashed #e8dcc0;cursor:pointer;gap:8px;}
+.rrow:last-child{border-bottom:none;}
+.rrow:active{background:#fff8e8;}
+.rlabel{font-size:11px;color:var(--text3);flex:1;}
+.rval{font-size:17px;font-weight:700;color:var(--accent);}
+.runit{font-size:11px;color:var(--text3);}
+.rcopy{font-size:9px;color:#bbb;margin-left:3px;}
+.rnote{padding:6px 12px;font-size:11px;color:var(--text3);background:var(--bg2);}
+.ract{padding:6px 12px;display:flex;gap:6px;}
+.ractbtn{flex:1;padding:6px;border:1px solid var(--border);border-radius:7px;background:var(--bg2);font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;}
+.typing{display:flex;gap:4px;padding:2px 0;}
+.typing span{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:td .9s infinite;}
+.typing span:nth-child(2){animation-delay:.2s;}
+.typing span:nth-child(3){animation-delay:.4s;}
+@keyframes td{0%,80%,100%{transform:scale(.5);opacity:.3}40%{transform:scale(1);opacity:1}}
+.qbar{display:flex;gap:5px;flex-wrap:wrap;padding:4px 0 2px;}
+.qbtn{font-size:11px;padding:5px 9px;border:1px solid var(--border);border-radius:12px;background:var(--bg2);color:var(--text2);cursor:pointer;}
+.qbtn:active{background:var(--accent);color:#fff;}
+.inp-bar{background:#fff;border-top:1px solid var(--border);padding:8px 10px;display:flex;gap:8px;align-items:flex-end;flex-shrink:0;}
+.inp-ta{flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;padding:9px 11px;font-size:14px;resize:none;outline:none;line-height:1.5;max-height:90px;min-height:40px;font-family:inherit;color:var(--text);}
+.inp-ta:focus{border-color:var(--accent);background:#fffdf5;}
+.send-btn{background:linear-gradient(135deg,#2a1a08,var(--accent));color:#fff;border:none;border-radius:10px;width:46px;height:46px;font-size:20px;cursor:pointer;flex-shrink:0;}
+.send-btn:disabled{background:var(--bg3);}
+/* ログイン */
+.lw{position:fixed;inset:0;background:linear-gradient(135deg,#2a1a08,#5a3010);display:flex;align-items:center;justify-content:center;z-index:9999;}
+.lc{background:#fff;border-radius:16px;padding:28px 24px;width:calc(100% - 40px);max-width:360px;}
+.ll{text-align:center;font-size:48px;margin-bottom:8px;}
+.lt{text-align:center;font-size:18px;font-weight:700;margin-bottom:4px;}
+.ls{text-align:center;font-size:12px;color:var(--text3);margin-bottom:20px;}
+.llb{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:5px;display:block;}
+.li{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;background:var(--bg);color:var(--text);outline:none;margin-bottom:12px;}
+.li:focus{border-color:var(--accent);}
+.lb{width:100%;padding:13px;background:linear-gradient(135deg,#2a1a08,var(--accent));color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px;}
+.le{color:#c03020;font-size:12px;text-align:center;margin-top:8px;min-height:16px;}
+</style>
+</head>
+<body>
+<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+const cfg={apiKey:"AIzaSyCVk2miG5TK1ffTofXLh0hHgeSbOvmIgZ8",authDomain:"kensetsu-nippo-842a2.firebaseapp.com",projectId:"kensetsu-nippo-842a2",storageBucket:"kensetsu-nippo-842a2.firebasestorage.app",messagingSenderId:"702880974315",appId:"1:702880974315:web:985321dc9180046629c5ae"};
+const app=initializeApp(cfg);const auth=getAuth(app);
+window.__fb={auth,signInWithEmailAndPassword,signOut,onAuthStateChanged};
+window.dispatchEvent(new Event('fbReady'));
+</script>
+<script>function fb(){return window.__fb;}</script>
+
+<div class="lw" id="lw">
+  <div class="lc">
+    <div class="ll">🏗️</div>
+    <div class="lt">大工AI計算チャット</div>
+    <div class="ls">登録済みユーザーのみ使用可能</div>
+    <label class="llb">メールアドレス</label>
+    <input class="li" id="l-email" type="email" placeholder="example@company.com" autocomplete="email">
+    <label class="llb">パスワード</label>
+    <input class="li" id="l-pass" type="password" placeholder="パスワード" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="lb" onclick="doLogin()">🔑 ログイン</button>
+    <div class="le" id="l-err"></div>
+  </div>
+</div>
+
+<div id="app" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
+  <div class="app-header">
+    <h1>🏗️ 大工AI計算チャット</h1>
+    <button class="hbtn" onclick="clearChat()">🗑️</button>
+    <button class="hbtn" onclick="doLogout()">ログアウト</button>
+  </div>
+  <div class="mode-bar">
+    <button class="mbtn active" id="mb-arch" onclick="setMode('arch')">🏛️ 大工建築士</button>
+    <button class="mbtn" id="mb-calc" onclick="setMode('calc')">🧮 文章計算</button>
+    <button class="mbtn" id="mb-search" onclick="setMode('search')">🔍 検索相談</button>
+  </div>
+  <div class="chat-area" id="ca"></div>
+  <div class="inp-bar">
+    <textarea class="inp-ta" id="inp" placeholder="質問・寸法を入力…" rows="1"
+      oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,90)+'px';"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send();}"></textarea>
+    <button class="send-btn" id="sb" onclick="send()">↑</button>
+  </div>
+</div>
+
+<script>
+var FB_URL=(location.hostname==='localhost'||location.hostname==='127.0.0.1')
+  ?'http://localhost:5001/kensetsu-nippo-842a2/us-central1'
+  :'https://us-central1-kensetsu-nippo-842a2.cloudfunctions.net';
+
+var _mode='arch',_hist=[],_busy=false;
+
+// ============================================================
+//  システムプロンプト（計算ロジック内蔵）
+// ============================================================
+var SYS_ARCH = `あなたは日本最高レベルの木造建築設計士兼ベテラン大工AIです。
+以下の計算ロジックを完全に習得しています。ユーザーが寸法を入力したら即座に計算し、結果と解説を提供してください。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【計算ロジック1】破風・鼻隠し・荒化粧計算
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ 基本公式
+・勾配比 = 勾配寸数 ÷ 10
+・斜辺比率（平伸び率）= √(1 + 勾配比²)
+・勾配角度 = atan(勾配比) × 180 / π
+・丸鋸上端カット角度 = 勾配角度（度）
+・丸鋸下端カット角度 = 90 − 勾配角度（度）
+
+■ 破風（斜辺方向）
+・地の間斜辺 = 地の間水平長さ × 斜辺比率
+・軒の出斜辺 = 軒の出水平長さ × 斜辺比率
+・荒破風合計長さ = 地の間斜辺 + 軒の出斜辺 ± 加減算の斜辺換算値
+・化粧破風合計長さ = 同上（別途加減算あり）
+・加減算の斜辺換算 = 加減算mm × 斜辺比率
+
+■ 鼻隠し（水平方向）
+・荒鼻隠し合計長さ = 梁間水平長さ + 軒の出 ± 加減算
+・化粧鼻隠し合計長さ = 同上
+
+■ 割付計算（荒材：定尺3600mm、化粧材：定尺3030mm）
+・必要枚数 = ceil(合計長さ ÷ 定尺)
+・半端 = 合計長さ − floor(合計長さ ÷ 定尺) × 定尺
+
+■ 標準断面寸法
+・荒破風・荒鼻隠し：105×27mm（定尺3600mm）
+・化粧破風・化粧鼻隠し：150×14mm（定尺3030mm）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【計算ロジック2】開口 ドア表・サッシ表（残り幅計算）
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ 標準ドアサイズ（幅mm）
+648, 734, 754, 1188, 1324, 1454, 1644
+
+■ 標準サッシサイズ（幅mm・半外付け）
+300, 405, 640, 730, 780, 924, 1185, 1235, 1640, 1690
+
+■ 計算式
+・開口幅 = 建具幅 + クリアランス×2（ドア標準2mm×2）
+・スパン数 = ceil(開口幅 ÷ モジュール) ※モジュール900or910mm
+・心々寸法 = スパン数 × モジュール
+・残り幅 = 心々寸法 − 開口幅 − 柱幅（標準105mm） − ボード厚×2
+・残り幅÷2 = 残り幅 ÷ 2（片側の余り）
+
+■ ボードケース（片側・両側）
+・無し：0mm
+・12.5mm片側：12.5mm
+・12.5mm両側：25mm
+・15mm片側：15mm
+・15mm両側：30mm
+
+■ 表の見方
+・残り幅÷2 がプラス→納まりOK
+・マイナス→そのモジュールでは納まらない
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【計算ロジック3】入り隅 長さ計算
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ 計算式（長さ一覧表）
+・基準値（150mm梁）= 階高 − 150 − 24 − 35 − クリアランス
+・梁幅Xmmの入り隅長さ = 基準値 − (X − 150)
+  ※梁幅が大きいほど入り隅は短くなる
+
+■ 標準パラメータ
+・控除内訳：天井厚24mm + 野縁35mm + 梁下隙間（150mm梁の場合0）
+・対応梁幅：150〜600mm（30mm刻み）
+
+■ 出力形式
+・梁幅と対応する入り隅長さの一覧表
+・例：階高2765mm → 基準値=2765−150−24−35=2556mm
+       150mm梁→2556mm / 180mm梁→2526mm / 210mm梁→2496mm...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【計算ロジック4】防水下地計算
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ 計算式
+・自動控除 = 柱幅105 + 垂木24 = 129mm
+・縦有効距離 = 縦ピッチ − 129 − 追加控除 − 溝幅120
+・縦上昇値 = 縦有効距離 × 勾配（分）
+  ※勾配は分で入力（例：1/50=0.02、1/30=0.033、1/20=0.05）
+・横有効距離 = 横ピッチ − 129 − 追加控除
+・横桟の高さ（構造加算） = 横桟寸法（標準24mm）
+
+■ 縦桟本数 = ceil(部屋幅 ÷ 縦ピッチ) + 1
+■ 横桟本数 = ceil(部屋奥行 ÷ 横ピッチ) + 1
+
+■ 標準ピッチ（モジュール910の場合）
+・縦：303mm（1/3スパン）・606mm・910mm・1820mm
+・横：910mm・1820mm・2730mm
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【対応方針】
+1. ユーザーの質問・寸法からどの計算ロジックか判断
+2. 数値が揃えば即計算して結果を提示
+3. 足りない情報は具体的に聞く
+4. 施工上の注意点・法令根拠も必ず付記
+5. Google検索で最新情報を確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+var SYS_CALC = `あなたは建設・大工計算専門のAIです。
+式がわからなくても自然な日本語で入力された計算をしてください。
+建設・大工に関する計算（勾配・斜辺・面積・坪・材料費・モジュール・寸法変換など）が得意です。
+計算結果がある場合、必ずこの形式を含めてください：
+RESULT_JSON:{"value":"数値のみ","unit":"単位","expression":"計算式"}
+valueは純粋な数値文字列（単位なし）。
+結果を日本語で丁寧に説明してください。`;
+
+var SYS_SEARCH = `あなたは建築・住宅・大工・施工に関する最新情報を調べるAIアシスタントです。
+Google検索を活用して、法令改正・補助金・規格・材料・工法の最新情報を提供してください。
+情報源・施行日・出典（条文番号・告示番号）も必ず明示してください。
+日本語で、現場で実際に役立つ情報を提供してください。`;
+
+// ============================================================
+//  クイックボタン（モード別）
+// ============================================================
+var QUICK = {
+  arch:[
+    '破風の計算方法を教えて','入り隅の長さ一覧表を出して',
+    'ドアの残り幅表を出して（900・910モジュール）',
+    'サッシの残り幅表を出して','防水下地の計算方法',
+    '準防火住宅の外壁仕様','階段の建築基準法','ファイヤーストップの設置基準'
+  ],
+  calc:[
+    '4.5寸勾配の斜辺係数','3640÷303は何本？',
+    '1820×910の面積は何m²？','6畳は何m²？',
+    '消費税10%込みの金額','坪単価の計算'
+  ],
+  search:[
+    '最新の建築基準法改正','省エネ基準2025年改正',
+    'ZEH補助金2025','長期優良住宅の認定基準',
+    '木造3階建ての最新規制','構造計算の義務化'
+  ]
+};
+
+// ============================================================
+//  UI操作
+// ============================================================
+function setMode(m){
+  _mode=m;
+  document.querySelectorAll('.mbtn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('mb-'+m).classList.add('active');
+  var ph={arch:'大工・建築の質問や寸法を入力…',calc:'例：4.5寸勾配で水平1820mmの斜辺は？',search:'例：2025年省エネ基準改正の内容は？'};
+  document.getElementById('inp').placeholder=ph[m]||'入力…';
+  showQuickBtns(QUICK[m]);
+}
+
+function showQuickBtns(btns){
+  if(!btns||!btns.length)return;
+  var ca=document.getElementById('ca');
+  var d=document.createElement('div');d.className='msg bot';
+  var av=document.createElement('div');av.className='av';av.textContent='🏗️';
+  var bub=document.createElement('div');bub.className='bub';
+  bub.innerHTML='<div class="qbar">'
+    +btns.map(function(b){return '<button class="qbtn" onclick="send(\''+b.replace(/'/g,"\\'")+'\')" >'+b+'</button>';}).join('')
+    +'</div>';
+  d.appendChild(av);d.appendChild(bub);
+  ca.appendChild(d);ca.scrollTop=ca.scrollHeight;
+}
+
+function clearChat(){
+  document.getElementById('ca').innerHTML='';
+  _hist=[];
+  welcome();
+}
+
+function welcome(){
+  appendMsg('bot','🏗️ 大工AI計算チャットへようこそ！\n\n破風・鼻隠し・入り隅・開口・防水などの計算ロジックが内蔵されています。\n寸法を入力するだけで即計算します。\n\n自由に質問してください。');
+  showQuickBtns(QUICK.arch);
+}
+
+// ============================================================
+//  メッセージ送受信
+// ============================================================
+async function send(quickText){
+  var inp=document.getElementById('inp');
+  var text=(quickText||(inp?inp.value:'')).trim();
+  if(!text||_busy)return;
+  if(!quickText){inp.value='';inp.style.height='';}
+
+  appendMsg('user',text);
+  _hist.push({role:'user',content:text});
+
+  var useSearch=(_mode==='search');
+  var sys=_mode==='calc'?SYS_CALC:_mode==='search'?SYS_SEARCH:SYS_ARCH;
+  var hist=_hist.slice(-10).map(function(h){return h.role+': '+h.content;}).join('\n');
+  var prompt=sys+'\n\n【会話履歴】\n'+hist+'\n\nユーザー: '+text;
+
+  var typEl=appendTyping();
+  _busy=true;document.getElementById('sb').disabled=true;
+  try{
+    var res=await fetch(FB_URL+'/askClaude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({prompt:prompt,model:'gemini-2.5-flash',useSearch:useSearch})
+    });
+    var data=await res.json();
+    var resp=data?.candidates?.[0]?.content?.parts?.[0]?.text||data?.text||data?.result||'応答なし';
+    typEl.remove();
+
+    // calcモード：RESULT_JSON抽出
+    var calcResult=null;
+    if(_mode==='calc'){
+      var m=resp.match(/RESULT_JSON:(\{[^}]+\})/);
+      if(m){try{calcResult=JSON.parse(m[1]);}catch(e){}}
+      resp=resp.replace(/RESULT_JSON:\{[^}]+\}/g,'').trim();
+    }
+
+    _hist.push({role:'assistant',content:resp.slice(0,600)});
+    appendMsg('bot',resp,calcResult);
+  }catch(err){
+    typEl.remove();
+    appendMsg('bot','⚠️ エラー: '+err.message);
+  }
+  _busy=false;document.getElementById('sb').disabled=false;
+}
+
+// ============================================================
+//  メッセージUI
+// ============================================================
+function appendMsg(role,text,calcResult){
+  var ca=document.getElementById('ca');
+  var d=document.createElement('div');d.className='msg '+role;
+  var av=document.createElement('div');av.className='av';av.textContent=role==='user'?'👤':'🏗️';
+  var bub=document.createElement('div');bub.className='bub';bub.textContent=text;
+  if(calcResult&&calcResult.value){
+    var chip=document.createElement('div');
+    chip.style.cssText='display:inline-flex;align-items:center;gap:7px;background:#e8f8f0;border:1px solid #a0d0b0;border-radius:10px;padding:7px 12px;margin-top:7px;cursor:pointer;';
+    chip.innerHTML='<span>📊</span><div><div style="font-size:18px;font-weight:700;color:#1a6a30;">'+calcResult.value+(calcResult.unit?' '+calcResult.unit:'')+'</div><div style="font-size:10px;color:#3a7a52;">タップしてコピー</div></div>';
+    chip.onclick=function(){
+      try{navigator.clipboard.writeText(calcResult.value);}catch(e){}
+      chip.querySelector('div div:last-child').textContent='✅ コピーしました';
+      setTimeout(function(){chip.querySelector('div div:last-child').textContent='タップしてコピー';},1800);
+    };
+    bub.appendChild(chip);
+  }
+  d.appendChild(av);d.appendChild(bub);
+  ca.appendChild(d);ca.scrollTop=ca.scrollHeight;
+}
+
+function appendTyping(){
+  var ca=document.getElementById('ca');
+  var d=document.createElement('div');d.className='msg bot';
+  d.innerHTML='<div class="av">🏗️</div><div class="bub"><div class="typing"><span></span><span></span><span></span></div></div>';
+  ca.appendChild(d);ca.scrollTop=ca.scrollHeight;return d;
+}
+
+// ============================================================
+//  認証
+// ============================================================
+function initAuth(){
+  if(!window.__fb){window.addEventListener('fbReady',initAuth,{once:true});return;}
+  fb().onAuthStateChanged(fb().auth,function(u){
+    if(u){showApp();}else{showLogin();}
+  });
+}
+function showLogin(){
+  document.getElementById('lw').style.display='flex';
+  document.getElementById('app').style.display='none';
+}
+function showApp(){
+  document.getElementById('lw').style.display='none';
+  var app=document.getElementById('app');
+  app.style.display='flex';app.style.flexDirection='column';
+  if(document.getElementById('ca').children.length===0)welcome();
+}
+async function doLogin(){
+  var email=document.getElementById('l-email').value.trim();
+  var pass=document.getElementById('l-pass').value;
+  var err=document.getElementById('l-err');err.textContent='';
+  if(!email||!pass){err.textContent='メールとパスワードを入力してください';return;}
+  try{await fb().signInWithEmailAndPassword(fb().auth,email,pass);}
+  catch(e){
+    var m={'auth/user-not-found':'ユーザーが見つかりません','auth/wrong-password':'パスワードが違います','auth/invalid-email':'メールアドレスが無効です','auth/too-many-requests':'しばらくお待ちください','auth/invalid-credential':'メールまたはパスワードが違います'};
+    err.textContent=m[e.code]||'ログインエラー: '+e.code;
+  }
+}
+async function doLogout(){
+  if(!confirm('ログアウトしますか？'))return;
+  await fb().signOut(fb().auth);
+}
+document.addEventListener('DOMContentLoaded',initAuth);
+</script>
+</body>
+</html>
